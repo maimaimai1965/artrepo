@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Licensed to the Apache Software Foundation (ASF) under one or more
+  contributor license agreements.  See the NOTICE file distributed with
+  this work for additional information regarding copyright ownership.
+  The ASF licenses this file to You under the Apache License, Version 2.0
+  (the "License"); you may not use this file except in compliance with
+  the License.  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+--><!-- The contents of this file will be loaded for each web application --><Context>
+
+    <!-- Default set of monitored resources. If one of these changes, the    -->
+    <!-- web application will be reloaded.                                   -->
+    <WatchedResource>WEB-INF/web.xml</WatchedResource>
+    <WatchedResource>WEB-INF/tomcat-web.xml</WatchedResource>
+    <WatchedResource>${catalina.base}/conf/web.xml</WatchedResource>
+
+    <!-- Uncomment this to disable session persistence across Tomcat restarts -->
+    <!--
+    <Manager pathname="" />
+    -->
+
+  <Environment name="ticpayment_schema"
+               value="kl_2017"
+               type="java.lang.String"/>
+
+  <Environment name="ticpayment_users_file" 
+               value="D:/java/work/workspace-eclipse-rest/TicPaymentRest/ticpayment_users_prod.json"
+               type="java.lang.String"/>
+
+  <Resource name="jdbc/ticpayment" auth="Container"
+            factory="org.apache.tomcat.jdbc.pool.DataSourceFactory"   
+            type="org.apache.tomcat.jdbc.pool.DataSource"
+            driverClassName="oracle.jdbc.OracleDriver"
+            url="jdbc:oracle:thin:@tornado:1522:tornado2"
+            username="TIC_PAYMENT_REST" password="TIC_PAYMENT_REST"
+            initSQL="ALTER SESSION SET CURRENT_SCHEMA = kl_2017"   
+            maxActive="10" maxIdle="5" minIdle="2" initialSize="2"
+            maxWait="30000"/>
+
+  <Resource name="jdbc/techlist" auth="Container"
+            factory="org.apache.tomcat.jdbc.pool.DataSourceFactory"   
+            type="org.apache.tomcat.jdbc.pool.DataSource"
+            driverClassName="oracle.jdbc.OracleDriver"
+            url="jdbc:oracle:thin:@tornado:1523:tornado12"
+            username="ticdev3" password="ticdev3"
+            initSQL="BEGIN EXECUTE IMMEDIATE 'ALTER SESSION SET CURRENT_SCHEMA=ticdev3';EXECUTE IMMEDIATE 'ALTER SESSION SET NLS_DATE_FORMAT=''YYYY.MM.DD''';END;"   
+            maxActive="10" maxIdle="5" minIdle="2" initialSize="2"
+            maxWait="30000"/>
+
+  <Resource name="jdbc/art_oracle" auth="Container"
+            factory="org.apache.tomcat.jdbc.pool.DataSourceFactory"   
+            type="org.apache.tomcat.jdbc.pool.DataSource"
+            driverClassName="oracle.jdbc.OracleDriver"
+            url="jdbc:oracle:thin:@tornado:1523:tornado12"
+            username="ticdev3" password="ticdev3"
+            initSQL="BEGIN EXECUTE IMMEDIATE 'ALTER SESSION SET CURRENT_SCHEMA=ticdev3';EXECUTE IMMEDIATE 'ALTER SESSION SET NLS_DATE_FORMAT=''YYYY.MM.DD''';END;"   
+            maxActive="10" maxIdle="5" minIdle="2" initialSize="2"
+            maxWait="30000"/>
+
+  <Resource name="jdbc/art_h2" auth="Container"
+            factory="org.apache.tomcat.jdbc.pool.DataSourceFactory"   
+            type="org.apache.tomcat.jdbc.pool.DataSource"
+            driverClassName="org.h2.Driver"
+            url="jdbc:h2:file:D:/java/work/idea_home/art/_db/h2/art;AUTO_SERVER=TRUE"
+            username="art" password="art"
+            maxActive="10" maxIdle="5" minIdle="2" initialSize="2"
+            maxWait="30000"/>
+
+  <Resource name="jdbc/art_postgres" auth="Container"
+            factory="org.apache.tomcat.jdbc.pool.DataSourceFactory"   
+            type="org.apache.tomcat.jdbc.pool.DataSource"
+            driverClassName="org.postgresql.Driver"
+            url="jdbc:postgresql://127.0.0.1:5432/art"
+            username="postgres" password="postgres"
+            maxActive="10" maxIdle="5" minIdle="2" initialSize="2"
+            maxWait="30000"/>
+
+</Context>
