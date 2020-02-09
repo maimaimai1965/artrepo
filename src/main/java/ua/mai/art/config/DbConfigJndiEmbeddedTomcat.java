@@ -5,6 +5,8 @@ import javax.sql.DataSource;
 
 import org.apache.catalina.Context;
 import org.apache.tomcat.util.descriptor.web.ContextResource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactory;
 import org.springframework.boot.web.embedded.tomcat.TomcatWebServer;
@@ -14,16 +16,22 @@ import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.annotation.Profile;
 import org.springframework.jndi.JndiObjectFactoryBean;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
+import ua.telesens.plu.log.StepLogRoot;
 
 
-/*
- * Конфигурация для создания DataSource на основании JNDI имени.
+/**
+ * Конфигурация для создания DataSource, который ищется по JNDI имени и использует Spring properties.
  * <p>
+ * Используется если нужно найти DataSource по его JNDI имени (задан один из профилей <code>db-<i>имя_БД</i>-jndi</code>)
+ * и задан профиль <code>ds-jndi-embedded/code>.<br>
+ * Подробнее см. {@link ua.mai.art.ArtSpringBootApplication}.
  */
 @Configuration
 @EnableTransactionManagement
 @Profile("ds-jndi-embedded")
 public class DbConfigJndiEmbeddedTomcat {
+
+    private org.slf4j.Logger logger = LoggerFactory.getLogger(this.getClass());
 
     @Bean
     public TomcatServletWebServerFactory tomcatFactory(
@@ -46,11 +54,16 @@ public class DbConfigJndiEmbeddedTomcat {
                 return super.getTomcatWebServer(tomcat);
             }
 
+            /**
+             *
+             * @param context
+             */
             @Override
             protected void postProcessContext(Context context) {
-                System.out.println("'ds-jndi-embedded' profile activated:  \n" +
-                        "  jndiName = " + jndiName + "; driverClassName = " + driverClassName +
-                        "\n  url = " + url + "; username = " + user);
+                StepLogRoot stepLogRoot =
+                    new StepLogRoot(DbConfigJndiEmbeddedTomcat.this.logger, "ArtCheckDataSource.checkAfterAppStarted()");
+                stepLogRoot.info("'ds-jndi-embedded' profile activated: jndiName = {}; driverClassName = {} url = {}; username = {}  []",
+                                 jndiName, driverClassName, url, user);
                 ContextResource resource = new ContextResource();
                 resource.setProperty("factory", "org.apache.tomcat.jdbc.pool.DataSourceFactory");
                 resource.setName(jndiName);

@@ -1,0 +1,314 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration name="Art_log" status="error">
+    <Properties>
+        <!-- Имя приложения забираем из свойства spring.application.name из файла application.property. -->
+        <Property name="module" value="${bundle:application:spring.application.name}"/>
+
+        <!-- Каталог к месту хранения лог-файлов: -->
+        <!-- 1. Для выполнения на внешнем Tomcat. Берет значение из переменной среды CATALINA_HOME.
+                Необходимо, чтобы была установлена эта переменная среды перед запуском приложения. Т.е. в bat
+                файле нужно выполнить команду:  set "CATALINA_HOME=.".
+                Можно выполнять приложение и на встроенном Tomcat, но в этом случае файлы логов будут писаться в каталог,
+                к пути которого добавляются каталоги logs/имя-модуля. -->
+        <Property name="log-path" value="${env:CATALINA_HOME}/logs/${module}"/>
+        <!-- 2. Для выполнения на встроенном Tomcat. Берет значение из свойства application.log-path. -->
+<!--        <Property name="log-path" value="${bundle:application:application.log-path}"/>-->
+
+<!--        <Property name="log-home"     value="${env:T_LOG_HOME:-${sys:user.home}}"/>-->
+<!--        <Property name="company-name" value="${env:T_COMPANY_NAME:-Telesens}"/>-->
+<!--        <Property name="product_id"   value="${env:T_PRODUCT_ID:-Common}"/>-->
+<!--        <Property name="log-path"     value="${log-home}/${company-name}/${product_id}/${module}/logs"/>-->
+
+        <!-- Каталог, в котором находятся архивы логов: -->
+        <Property name="archive" value="${log-path}/archive"/>
+        <Property name="log-charset" value="UTF-8"/>
+    </Properties>
+
+    <!--Этот скрипт может установить режим для разработки приложения (для него значение в CDATA должно быть true).
+        В этом режиме производится логирование в консоль SYSTEM_OUT.
+        Для релиза - CDATA должно быть false, т.к. в SYSTEM_OUT должен выводиться help по этому модулю и не нужно
+        выводить информацию о работе приложения в консоль. -->
+    <Scripts>
+        <Script name="IsDev" language="javascript">
+<!--            <![CDATA[false;]]>-->
+            <![CDATA[true;]]>
+        </Script>
+    </Scripts>
+
+    <Scripts>
+        <Script name="PatternSelectorForMarker" language="javascript">
+            <![CDATA[
+               result = null;
+               if (logEvent.getMarker() == null) {
+                 result = logEvent.getLevel();
+               }
+               else {
+                 result = logEvent.getMarker();
+               }
+               result;
+           ]]>
+        </Script>
+    </Scripts>
+
+<!--    <Scripts>-->
+<!--        <Script name="PatternSelectorForRootLog" language="javascript">-->
+<!--            <![CDATA[-->
+<!--               result = null;-->
+<!--               if (logEvent.getMarker() == null) {-->
+<!--                 result = logEvent.getLevel();-->
+<!--               }-->
+<!--               else {-->
+<!--                 marker = logEvent.getMarker();-->
+<!--                 result = (marker == 'ROOT') ? marker : 'SKIP';-->
+<!--               }-->
+<!--               result;-->
+<!--           ]]>-->
+<!--        </Script>-->
+<!--    </Scripts>-->
+
+    <Appenders>
+        <Console name="console" target="SYSTEM_OUT">
+            <ScriptFilter onMatch="ACCEPT" onMisMatch="NEUTRAL">
+                <ScriptRef ref="IsDev" />
+            </ScriptFilter>
+            <PatternLayout charset="${log-charset}">
+<!--                <ScriptPatternSelector defaultPattern="%d %-7marker %-5p %-32X{requestId} %-5X{stepPhase} %msg%throwable{short.message} %l%n">-->
+                <ScriptPatternSelector defaultPattern="%d %-7marker %-5p%equals{ %-32X{jobId}}{ }{%equals{ %-32X{requestId}}{ }{%-32X{rootId}}} %-5X{stepPhase} %msg%throwable{short.message} %l%n">
+                    <ScriptRef ref="PatternSelectorForMarker"/>
+                    <PatternMatch key="ROOT"    pattern="%d %-7marker %-5p %-32X{rootId} %-5X{stepPhase}%equals{ %X{execTime}}{ }{} %msg%throwable{short.message} [%X{stepName}]%n"/>
+                    <PatternMatch key="REQUEST" pattern="%d %-7marker %-5p %-32X{requestId}       %msg%throwable{short.message} [%X{stepName}]%n"/>
+                    <PatternMatch key="JOB"     pattern="%d %-7marker %-5p %-32X{jobId} %-5X{stepPhase}%equals{ %X{execTime}}{ }{} %msg%throwable{short.message} [%X{stepName}]%n"/>
+                    <PatternMatch key="DETAIL"  pattern="%d %-7marker %-5p %-32X{jobId}%equals{ %X{detailId}}{ }{} %-5X{stepPhase}%equals{ %X{execTime}}{ }{} %msg%throwable{short.message} %equals{ [%X{stepName}]}{ []}{}%n"/>
+                    <PatternMatch key="DB"      pattern="%d %-7marker %-5p %-32X{jobId}%equals{ %X{detailId}}{ }{} %-5X{stepPhase}%equals{ %X{execTime}}{ }{} %msg%throwable{short.message} %equals{ [%X{stepName}]}{ []}{}%n"/>
+<!--                    <PatternMatch key="DB"      pattern="%d %-7marker %-5p %-32X{detailId} %-5X{stepPhase}%equals{ %X{execTime}}{ }{} %msg%throwable{short.message} %equals{ [%X{stepName}]}{ []}{}%n"/>-->
+<!--                    <PatternMatch key="EXT"     pattern="%d %-7marker %-5p %X{requestId} %X{jobId} %X{detailId}   %-5X{stepPhase}%equals{ %X{execTime}}{ }{} %msg%throwable{short.message} [%X{stepName}]%n"/>-->
+                </ScriptPatternSelector>
+            </PatternLayout>
+        </Console>
+
+        <RollingFile name="rootLogFile" fileName="${log-path}/${module}_root.log"
+                filePattern="${archive}/${module}_root.%d{yyyy-MM}.log.gz"
+                immediateFlush="true" append="true" bufferedIO="true">
+            <Filters>
+                <MarkerFilter marker="ROOT"    onMatch="ACCEPT" onMismatch="NEUTRAL" />
+                <MarkerFilter marker="REQUEST" onMatch="DENY"   onMismatch="NEUTRAL" />
+                <MarkerFilter marker="JOB"     onMatch="DENY"   onMismatch="NEUTRAL" />
+                <MarkerFilter marker="DETAIL"  onMatch="DENY"   onMismatch="NEUTRAL" />
+                <MarkerFilter marker="DB"      onMatch="DENY"   onMismatch="NEUTRAL" />
+            </Filters>
+            <PatternLayout charset="${log-charset}">
+                <ScriptPatternSelector defaultPattern="%d %-4marker %-5p %X{rootId} %-5X{stepPhase} %msg%throwable{short.message} [%X{stepName}]%n">
+                    <ScriptRef ref="PatternSelectorForMarker"/>
+                    <PatternMatch key="ROOT" pattern="%d %marker %-5p %X{rootId} %-5X{stepPhase}%equals{ %X{execTime}}{ }{} %msg%throwable{short.message} [%X{stepName}]%n"/>
+                </ScriptPatternSelector>
+            </PatternLayout>
+            <Policies>
+                <SizeBasedTriggeringPolicy size="1 MB"/>
+            </Policies>
+            <DefaultRolloverStrategy max="3">
+            </DefaultRolloverStrategy>
+        </RollingFile>
+
+        <RollingFile name="requestLogFile" fileName="${log-path}/${module}_request.log"
+                filePattern="${archive}/${module}_request.%d{yyyy-MM}.log.gz"
+                immediateFlush="true" append="true" bufferedIO="true">
+            <Filters>
+                <MarkerFilter marker="ROOT"    onMatch="DENY"   onMismatch="NEUTRAL" />
+                <MarkerFilter marker="REQUEST" onMatch="ACCEPT" onMismatch="NEUTRAL" />
+                <MarkerFilter marker="JOB"     onMatch="DENY"   onMismatch="NEUTRAL" />
+                <MarkerFilter marker="DETAIL"  onMatch="DENY"   onMismatch="NEUTRAL" />
+                <MarkerFilter marker="DB"      onMatch="DENY"   onMismatch="NEUTRAL" />
+            </Filters>
+            <PatternLayout charset="${log-charset}">
+                <ScriptPatternSelector defaultPattern="%d %-7marker %-5p %-32X{requestId} %msg%throwable{short.message}%n">
+                    <ScriptRef ref="PatternSelectorForMarker"/>
+                    <PatternMatch key="REQUEST" pattern="%d %marker %-5p %-32X{requestId} %-5X{stepPhase}%equals{ %X{execTime}}{ }{} %msg%throwable{short.message} [%X{stepName}]%n"/>
+                </ScriptPatternSelector>
+            </PatternLayout>
+            <Policies>
+                <SizeBasedTriggeringPolicy size="5 MB"/>
+            </Policies>
+            <DefaultRolloverStrategy max="3">
+            </DefaultRolloverStrategy>
+        </RollingFile>
+
+        <RollingFile name="jobLogFile" fileName="${log-path}/${module}_job.log"
+                filePattern="${archive}/${module}_job.%d{yyyy-MM}.log.gz"
+                immediateFlush="true" append="true" bufferedIO="true">
+            <MarkerFilter marker="JOB" onMatch="ACCEPT" onMismatch="DENY" />
+            <PatternLayout charset="${log-charset}"
+                    pattern="%d %marker %-5p %-32X{jobId} %-5X{stepPhase}%equals{ %X{execTime}}{ }{} %msg%throwable{short.message} [%X{stepName}]%n"/>
+            <Policies>
+                <SizeBasedTriggeringPolicy size="2 MB"/>
+            </Policies>
+            <DefaultRolloverStrategy max="3">
+            </DefaultRolloverStrategy>
+        </RollingFile>
+
+        <RollingFile name="detailLogFile" fileName="${log-path}/${module}_detail.log"
+                filePattern="${archive}/${module}_detail.%d{yyyy-MM}.log.gz"
+                immediateFlush="true" append="true" bufferedIO="true">
+            <Filters>
+                <MarkerFilter marker="JOB" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
+                <MarkerFilter marker="DETAIL" onMatch="ACCEPT" onMismatch="DENY" />
+            </Filters>
+            <PatternLayout charset="${log-charset}">
+                <ScriptPatternSelector defaultPattern="%d %-7marker %-5p %-32X{jobId} %-5X{stepPhase} %msg%throwable{short.message} [%X{stepName}]%n">
+                    <ScriptRef ref="PatternSelectorForMarker"/>
+                    <PatternMatch key="JOB"    pattern="%d %-6marker %-5p %-32X{jobId} %-5X{stepPhase}%equals{ %X{execTime}}{ }{} %msg%throwable{short.message} [%X{stepName}]%n"/>
+                    <PatternMatch key="DETAIL" pattern="%d %-6marker %-5p %-32X{jobId} %X{detailId} %-5X{stepPhase}%equals{ %X{execTime}}{ }{} %msg%throwable{short.message} %equals{ [%X{stepName}]}{ []}{}%n"/>
+                </ScriptPatternSelector>
+            </PatternLayout>
+            <Policies>
+                <SizeBasedTriggeringPolicy size="10 MB"/>
+            </Policies>
+            <DefaultRolloverStrategy max="3">
+            </DefaultRolloverStrategy>
+        </RollingFile>
+
+        <RollingFile name="dbLogFile" fileName="${log-path}/${module}_db.log"
+                filePattern="${archive}/${module}_job.%d{yyyy-MM}.log.gz"
+                immediateFlush="true" append="true" bufferedIO="true">
+            <Filters>
+                <MarkerFilter marker="ROOT"    onMatch="DENY"   onMismatch="NEUTRAL" />
+                <MarkerFilter marker="REQUEST" onMatch="DENY"   onMismatch="NEUTRAL" />
+                <MarkerFilter marker="JOB"     onMatch="DENY"   onMismatch="NEUTRAL" />
+                <MarkerFilter marker="DETAIL"  onMatch="DENY"   onMismatch="NEUTRAL" />
+                <MarkerFilter marker="DB"      onMatch="ACCEPT" onMismatch="NEUTRAL" />
+            </Filters>
+            <PatternLayout charset="${log-charset}">
+                <ScriptPatternSelector defaultPattern="%d %-2marker %-5p%equals{ %-32X{jobId}}{ }{%-32X{requestId}} %X{detailId} %msg%throwable{short.message}%n">
+                    <ScriptRef ref="PatternSelectorForMarker"/>
+                    <PatternMatch key="DB" pattern="%d %marker %-5p %-32X{jobId} %X{detailId} %-5X{stepPhase}%equals{ %X{execTime}}{ }{} %msg%throwable{short.message} %equals{ [%X{stepName}]}{ []}{}%n"/>
+                </ScriptPatternSelector>
+            </PatternLayout>
+
+            <Policies>
+                <SizeBasedTriggeringPolicy size="10 MB"/>
+            </Policies>
+            <DefaultRolloverStrategy max="3">
+            </DefaultRolloverStrategy>
+        </RollingFile>
+
+        <!--        <RollingFile name="extLogFile" fileName="${log-path}/${module}_ext.log"-->
+        <!--                filePattern="${archive}/${module}_job.%d{yyyy-MM}.log.gz"-->
+        <!--                immediateFlush="true" append="true" bufferedIO="true">-->
+        <!--            <MarkerFilter marker="EXT" onMatch="ACCEPT" onMismatch="DENY" />-->
+        <!--            <PatternLayout charset="${log-charset}"-->
+        <!--                    pattern="%d %marker %-5p %X{requestId} %X{jobId} %X{detailId} %-5X{stepPhase}%equals{ %X{execTime}}{ }{} %msg%throwable{short.message} [%X{stepName}]%n"/>-->
+        <!--            <Policies>-->
+        <!--                <SizeBasedTriggeringPolicy size="1 MB"/>-->
+        <!--            </Policies>-->
+        <!--            <DefaultRolloverStrategy max="3">-->
+        <!--            </DefaultRolloverStrategy>-->
+        <!--        </RollingFile>-->
+
+        <RollingFile name="debugLogFile" fileName="${log-path}/${module}_debug.log"
+                filePattern="${archive}/${module}_debug_%i.log.gz"
+                immediateFlush="true" append="true" bufferedIO="true" >
+            <PatternLayout charset="${log-charset}">
+                <ScriptPatternSelector defaultPattern="%d %-7marker %-5p%equals{ %-32X{jobId}}{ }{%-32X{requestId}}%equals{ %X{detailId}}{ }{} %-5X{stepPhase} %msg%throwable{short.message} [%X{stepName}]%n">
+                    <ScriptRef ref="PatternSelectorForMarker"/>
+                    <PatternMatch key="ROOT"    pattern="%d %-7marker %-5p %-32X{rootId} %-5X{stepPhase}%equals{ %X{execTime}}{ }{} %msg%throwable{short.message} [%X{stepName}]%n"/>
+                    <PatternMatch key="REQUEST" pattern="%d %-7marker %-5p %-32X{requestId}       %msg%throwable{short.message}%n"/>
+                    <PatternMatch key="JOB"     pattern="%d %-7marker %-5p %-32X{jobId} %-5X{stepPhase}%equals{ %X{execTime}}{ }{} %msg%throwable{short.message} [%X{stepName}]%n"/>
+                    <PatternMatch key="DETAIL"  pattern="%d %-7marker %-5p %-32X{jobId}%equals{ %X{detailId}}{ }{} %-5X{stepPhase}%equals{ %X{execTime}}{ }{} %msg%throwable{short.message} %equals{ [%X{stepName}]}{ []}{}%n"/>
+                    <PatternMatch key="DB"      pattern="%d %-7marker %-5p %-32X{jobId}%equals{ %X{detailId}}{ }{} %-5X{stepPhase}%equals{ %X{execTime}}{ }{} %msg%throwable{short.message} %equals{ [%X{stepName}]}{ []}{}%n"/>
+<!--                    <PatternMatch key="EXT"     pattern="%d %-7marker %-5p %X{requestId} %X{jobId} %X{detailId}   %-5X{stepPhase}%equals{ %X{execTime}}{ }{} %msg%throwable{short.message} [%X{stepName}]%n"/>-->
+                </ScriptPatternSelector>
+            </PatternLayout>
+            <Policies>
+                <SizeBasedTriggeringPolicy size="20 MB"/>
+            </Policies>
+            <DefaultRolloverStrategy max="3">
+            </DefaultRolloverStrategy>
+        </RollingFile>
+
+    </Appenders>
+
+    <Loggers>
+        <!--        <Logger name="ua.telesens.plu" level="debug" additivity="false">-->
+        <Logger name="ua.mai" level="debug" additivity="false">
+            <AppenderRef ref="console"        level="debug"/>
+            <AppenderRef ref="rootLogFile"    level="debug"/>
+            <AppenderRef ref="requestLogFile" level="debug"/>
+            <AppenderRef ref="jobLogFile"     level="info"/>
+            <AppenderRef ref="detailLogFile"  level="debug"/>
+            <AppenderRef ref="dbLogFile"      level="debug"/>
+<!--            <AppenderRef ref="extLogFile"     level="debug"/>-->
+            <AppenderRef ref="debugLogFile"   level="trace"/>
+        </Logger>
+        <Logger name="ua.mai.art.ArtSpringBootApplication"
+                level="debug" additivity="false">
+            <AppenderRef ref="console"        level="debug"/>
+            <AppenderRef ref="rootLogFile"    level="debug"/>
+            <AppenderRef ref="requestLogFile" level="debug"/>
+            <AppenderRef ref="debugLogFile"   level="debug"/>
+        </Logger>
+
+
+<!--        <Logger name="org.springframework.boot.context.logging.ClasspathLoggingApplicationListener"-->
+<!--                level="debug" additivity="false">-->
+<!--            <AppenderRef ref="console"        level="debug"/>-->
+<!--            <AppenderRef ref="rootLogFile"    level="debug"/>-->
+<!--            <AppenderRef ref="debugLogFile"   level="debug"/>-->
+<!--        </Logger>-->
+        <Logger name="org.springframework.boot.StartupInfoLogger"
+                level="debug" additivity="false">
+            <AppenderRef ref="console"        level="debug"/>
+            <AppenderRef ref="rootLogFile"    level="debug"/>
+            <AppenderRef ref="debugLogFile"   level="debug"/>
+        </Logger>
+
+
+
+<!--        <Logger name="org.springframework.boot" level="debug" additivity="true">-->
+<!--            <AppenderRef ref="console"        level="debug"/>-->
+<!--            <AppenderRef ref="rootLogFile"    level="debug"/>-->
+<!--            <AppenderRef ref="debugLogFile"   level="debug"/>-->
+<!--        </Logger>-->
+
+        <Logger name="org.springframework.jdbc.core" level="trace" additivity="false">
+            <AppenderRef ref="console"        level="trace"/>
+            <AppenderRef ref="dbLogFile"      level="trace"/>
+            <AppenderRef ref="debugLogFile"   level="trace"/>
+        </Logger>
+        <Logger name="org.apache.tomcat.jdbc.pool" level="trace" additivity="false">
+            <AppenderRef ref="console"        level="trace"/>
+            <AppenderRef ref="dbLogFile"      level="trace"/>
+            <AppenderRef ref="debugLogFile"   level="trace"/>
+        </Logger>
+<!--        <Logger name="org.apache.juli.logging" level="trace" additivity="false">-->
+<!--            <AppenderRef ref="console"        level="trace"/>-->
+<!--            <AppenderRef ref="dbLogFile"      level="trace"/>-->
+<!--            <AppenderRef ref="debugLogFile"   level="trace"/>-->
+<!--        </Logger>-->
+<!--        <Logger name="org.springframework.jdbc.datasource.DataSourceTransactionManager" level="trace" additivity="false">-->
+<!--            <AppenderRef ref="console"        level="trace"/>-->
+<!--            <AppenderRef ref="dbLogFile"      level="trace"/>-->
+<!--            <AppenderRef ref="debugLogFile"   level="trace"/>-->
+<!--        </Logger>-->
+<!--        <Logger name="org.springframework.jdbc.core.StatementCreatorUtils" level="trace" additivity="false">-->
+<!--            <AppenderRef ref="console"        level="trace"/>-->
+<!--            <AppenderRef ref="dbLogFile"      level="trace"/>-->
+<!--            <AppenderRef ref="debugLogFile"   level="trace"/>-->
+<!--        </Logger>-->
+
+<!--        <Logger name="org.h2.jdbc" level="trace" additivity="false">-->
+<!--            <AppenderRef ref="console"        level="trace"/>-->
+<!--            <AppenderRef ref="dbLogFile"      level="trace"/>-->
+<!--            <AppenderRef ref="debugLogFile"   level="trace"/>-->
+<!--        </Logger>-->
+
+
+
+        <Root level="info" >
+            <AppenderRef ref="rootLogFile"/>
+            <AppenderRef ref="jobLogFile"/>
+            <AppenderRef ref="detailLogFile"/>
+            <AppenderRef ref="debugLogFile"/>
+            <AppenderRef ref="console"/>
+        </Root>
+    </Loggers>
+
+</Configuration>

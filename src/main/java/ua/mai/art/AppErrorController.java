@@ -7,6 +7,9 @@ import org.springframework.web.bind.annotation.ResponseBody;
 
 import javax.servlet.http.HttpServletRequest;
 
+/**
+ * Выводит ошибку в html страницу.
+ */
 @Controller
 public class AppErrorController  implements ErrorController {
 
@@ -17,8 +20,8 @@ public class AppErrorController  implements ErrorController {
     Exception exception = (Exception) request.getAttribute("javax.servlet.error.exception");
     return String.format("<html><body><h2>Error Page</h2><div>Status code: <b>%s</b></div>"
                              + "<div>Exception Message: <b>%s</b></div><body></html>",
-                        statusCode,
-                        exception==null? "N/A": exception.getMessage());
+                         statusCode,
+                         exception==null ? "N/A": exception.getMessage());
   }
 
   @Override

@@ -1,5 +1,8 @@
 package ua.mai.art.repository;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Repository;
 import ua.mai.art.domain.Student;
 
 import java.util.List;
@@ -25,7 +28,7 @@ public interface StudentRepository {
       throw new RuntimeException("Not defined student to delete!");
     }
     return deleteById(student.getId());
-  };
+  }
 
   public int deleteById(long id);
 
