@@ -10,19 +10,28 @@ import org.springframework.stereotype.Service;
 import ua.mai.art.repository.SupportRepository;
 import ua.telesens.plu.log.StepLogJob;
 
+import java.util.function.Supplier;
+
 @Service
-public class SupportServiceImpl implements SupportService, ApplicationContextAware {
+public class SupportServiceImpl implements SupportService {
 
   private Logger logger = LoggerFactory.getLogger(this.getClass());
 
-  @Autowired
   private SupportRepository supportRepository;
+  private Supplier<String> jobIdSupplier;
 
-  private ApplicationContext ctx;
+  @Autowired
+  public SupportServiceImpl(SupportRepository supportRepository) {
+    this.supportRepository = supportRepository;
+  }
 
-  @Override
-  public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
-    this.ctx = applicationContext;
+  @Autowired
+  public void setJobIdSupplier(Supplier<String> jobIdSupplier) {
+    this.jobIdSupplier = jobIdSupplier;
+  }
+
+  public String getJobId() {
+    return jobIdSupplier.get();
   }
 
 
@@ -36,7 +45,7 @@ public class SupportServiceImpl implements SupportService, ApplicationContextAwa
    */
   @Override
   public boolean checkConnection() {
-    StepLogJob stepLogJob = new StepLogJob(logger, (String)ctx.getBean("jobId"), "SupportService.checkConnection()");
+    StepLogJob stepLogJob = new StepLogJob(logger, getJobId(), "SupportService.checkConnection()");
     stepLogJob.startStep("Check connection.");
     try {
       supportRepository.checkConnection();

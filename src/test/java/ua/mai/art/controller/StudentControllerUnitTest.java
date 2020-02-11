@@ -35,8 +35,8 @@ public class StudentControllerUnitTest {
     StudentService studentService = mock(StudentService.class);
     when(studentService.findAll()).thenReturn(students);
 
-    StudentController studentController = new StudentController();
-    ReflectionTestUtils.setField(studentController, "studentService", studentService);
+    StudentController studentController = new StudentController(studentService);
+//    ReflectionTestUtils.setField(studentController, "studentService", studentService);
 
     ExtendedModelMap uiModel = new ExtendedModelMap();
 
@@ -61,8 +61,8 @@ public class StudentControllerUnitTest {
                                          }
                                        });
 
-    StudentController studentController = new StudentController();
-    ReflectionTestUtils.setField(studentController, "studentService", studentService);
+    StudentController studentController = new StudentController(studentService);
+//    ReflectionTestUtils.setField(studentController, "studentService", studentService);
     long id = studentController.insert(newStudent);
 
     assertEquals(25L, id);

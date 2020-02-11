@@ -7,6 +7,9 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Scope;
 import ua.mai.LogIdUtils;
+import ua.mai.art.aspect.LoggingAspect;
+
+import java.util.function.Supplier;
 
 /*
  * Содержит бин rootId, бины для генерации идентификаторов jobId, detailId, а так же метод.
@@ -18,7 +21,8 @@ public class LogConfig {
   private static String rootId = null;
 
   /**
-   * Создает идентификатор запущенного приложения rootId;
+   * Создает идентификатор запущенного приложения rootId.
+   *
    * @param rootPrefix
    * @return
    */
@@ -28,61 +32,132 @@ public class LogConfig {
   }
 
   /**
-   * Возвращает идентификатор rootId.
+   * Возвращает requestId для старта приложения.
+   *
+   * @return
    */
-  @Bean("rootId")
-  public String getRootId() {
-    return rootId;
+  public static String getStartRequestId() {
+    return getRequestId("ini");
+  }
+
+  public static String getRequestId(String requestPrefix) {
+    return LogIdUtils.createRequestId(requestPrefix);
+  }
+
+//  /**
+//   * Возвращает идентификатор rootId.
+//   */
+//  @Bean("rootId")
+//  public String getRootId() {
+//    return rootId;
+//  }
+//
+//  /**
+//   * Возвращает новый идентификатор requestId.<br>
+//   *
+//   * @param requestPrefix
+//   * @return идентификатор requestId
+//   */
+//  public static String createRequestId(String requestPrefix) {
+//    String requestId = LogIdUtils.createRequestId(requestPrefix);
+//    return requestId;
+//  }
+//
+//  /**
+//   * Бин, возвращающий новый идентификатор requestId.<br>
+//   * Используется в {@link ua.mai.art.aspect.LoggingAspect#stepLogAround(ProceedingJoinPoint, LoggingAspect.LogMarkerName)}.
+//   *
+//   * @return идентификатор jobId
+//   */
+//  @Bean("requestId")
+//  @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
+//  public String createRequestId() {
+//    String requestId = createRequestId("req");
+//    return requestId;
+//  }
+//
+//  /**
+//   * Бин, возвращающий новый идентификатор jobId.<br>
+//   * Используется в {@link ua.mai.art.aspect.LoggingAspect#stepLogAround(ProceedingJoinPoint, LoggingAspect.LogMarkerName)}.
+//   *
+//   * @return идентификатор jobId
+//   */
+//  @Bean("jobId")
+//  @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
+//  public String createJobId() {
+//    String jobId = LogIdUtils.createJobId();
+//    return jobId;
+//  }
+//
+//  /**
+//   * Возвращает новый идентификатор detailId.<br>
+//   * Используется в {@link ua.mai.art.aspect.LoggingAspect#stepLogAround(ProceedingJoinPoint, LoggingAspect.LogMarkerName)}.
+//   *
+//   * @return идентификатор jobId
+//   */
+//  @Bean("detailId")
+//  @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
+//  public String createDetailId() {
+//    String detailId = LogIdUtils.createDetailId();
+//    return detailId;
+//  }
+
+
+
+  /**
+   * Возвращает поставщика идентификатора rootId.<br>
+   * Используется в {@link ua.mai.art.aspect.LoggingAspect#stepLogAround(ProceedingJoinPoint, LoggingAspect.LogMarkerName)}.
+   *
+   * @return поставщик rootId
+   */
+  @Bean("rootIdSupplier")
+  public Supplier<String> createRootIdSupplier() {
+    return () -> rootId;
+  }
+
+
+  /**
+   * Возвращает поставщика идентификатора requestId.<br>
+   * Используется в {@link ua.mai.art.aspect.LoggingAspect#stepLogAround(ProceedingJoinPoint, LoggingAspect.LogMarkerName)}.
+   *
+   * @return поставщик requestId
+   */
+  @Bean("prefixRequestIdSupplier")
+  public Supplier<String> createPrefixRequestIdSupplier() {
+    return () -> "req";
   }
 
   /**
-   * Возвращает новый идентификатор requestId.<br>
+   * Возвращает поставщика идентификатора requestId.<br>
+   * Используется в {@link ua.mai.art.aspect.LoggingAspect#stepLogAround(ProceedingJoinPoint, LoggingAspect.LogMarkerName)}.
    *
-   * @param requestPrefix
-   * @return идентификатор requestId
+   * @return поставщик requestId
    */
-  public static String createRequestId(String requestPrefix) {
-    String requestId = LogIdUtils.createRequestId(requestPrefix);
-    return requestId;
+  @Bean("requestIdSupplier")
+  public Supplier<String> createRequestIdSupplier() {
+    return () -> LogIdUtils.createRequestId("req");
   }
 
   /**
-   * Бин, возвращающий новый идентификатор requestId.<br>
-   * Используется в {@link ua.mai.art.aspect.LoggingAspect#stepLogAround(ProceedingJoinPoint, String)}.
+   * Возвращает поставщика идентификатора detailId.<br>
+   * Используется в {@link ua.mai.art.aspect.LoggingAspect#stepLogAround(ProceedingJoinPoint, LoggingAspect.LogMarkerName)}.
    *
-   * @return идентификатор jobId
+   * @return поставщик jobId
    */
-  @Bean("requestId")
-  @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-  public String createRequestId() {
-    String requestId = createRequestId("req");
-    return requestId;
+  @Bean("jobIdSupplier")
+  public Supplier<String> createJobIdSupplier() {
+    return () -> LogIdUtils.createJobId();
   }
 
   /**
-   * Бин, возвращающий новый идентификатор jobId.<br>
-   * Используется в {@link ua.mai.art.aspect.LoggingAspect#stepLogAround(ProceedingJoinPoint, String)}.
+   * Возвращает поставщика идентификатора detailId.<br>
+   * Используется в {@link ua.mai.art.aspect.LoggingAspect#stepLogAround(ProceedingJoinPoint, LoggingAspect.LogMarkerName)}.
    *
-   * @return идентификатор jobId
+   * @return поставщик detailId
    */
-  @Bean("jobId")
-  @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-  public String createJobId() {
-    String jobId = LogIdUtils.createJobId();
-    return jobId;
-  }
-
-  /**
-   * Возвращает новый идентификатор detailId.<br>
-   * Используется в {@link ua.mai.art.aspect.LoggingAspect#stepLogAround(ProceedingJoinPoint, String)}.
-   *
-   * @return идентификатор jobId
-   */
-  @Bean("detailId")
-  @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-  public String createDetailId() {
-    String detailId = LogIdUtils.createDetailId();
-    return detailId;
+  @Bean("detailIdSupplier")
+  public Supplier<String> createDetailIdSupplier() {
+    return () -> LogIdUtils.createDetailId();
   }
 
 }

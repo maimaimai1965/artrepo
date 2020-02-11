@@ -8,37 +8,38 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Marker;
 import org.springframework.beans.BeansException;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.ApplicationContextAware;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import ua.mai.LogIdUtils;
 import ua.mai.art.config.LogConfig;
 import ua.telesens.plu.log.*;
 
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
 import java.util.Arrays;
-
-import static java.lang.annotation.ElementType.METHOD;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
+import java.util.function.Supplier;
 
 /**
  * Aspect for logging execution of repositories, services and controllers.
- * @author Ramesh Fadatare
- *
  */
 @Aspect
 @Component
-public class LoggingAspect implements ApplicationContextAware {
+public class LoggingAspect //implements ApplicationContextAware
+{
 
   private Logger logger = LoggerFactory.getLogger(this.getClass());
 
+  //Поставщики Id шагов логирования:
+  private Supplier<String> rootIdSupplier;
+  private Supplier<String> requestIdSupplier;
+  private Supplier<String> jobIdSupplier;
+  private Supplier<String> detailIdSupplier;
 
-  private ApplicationContext ctx;
-
-  @Override
-  public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
-    this.ctx = applicationContext;
+  @Autowired
+  public LoggingAspect(Supplier<String> rootIdSupplier, Supplier<String> requestIdSupplier,
+                       Supplier<String> jobIdSupplier, Supplier<String> detailIdSupplier) {
+    this.rootIdSupplier = rootIdSupplier;
+    this.requestIdSupplier = requestIdSupplier;
+    this.jobIdSupplier = jobIdSupplier;
+    this.detailIdSupplier = detailIdSupplier;
   }
 
   //--------------------------------------------- Repository -----------------------------------------------------------
@@ -103,7 +104,8 @@ public class LoggingAspect implements ApplicationContextAware {
     return stepLogAround(joinPoint, LogMarkerName.REQUEST);
   }
 
-  enum LogMarkerName {
+
+  public enum LogMarkerName {
     ROOT, REQUEST, JOB, DETAIL, DB, EXT
   }
 
@@ -113,17 +115,17 @@ public class LoggingAspect implements ApplicationContextAware {
     target = target.substring(0, target.lastIndexOf('@')) + "." + joinPoint.getSignature().getName() + "()";
     StepLog stepLog = null;
     switch (logMarkerName) {
-      case DB:      stepLog = new StepLogDb(logger, target);
+      case DB:      //Используются установленные ранее Id.
+                    stepLog = new StepLogDb(logger, target);
                     break;
       case JOB:     //jobId получаем из бина в LogConfig.
-                    stepLog = new StepLogJob(logger, (String)ctx.getBean("jobId"), target);
+                    stepLog = new StepLogJob(logger, jobIdSupplier.get(), target);
                     break;
       case REQUEST: //requstId получаем из бина в LogConfig.
-                    stepLog = new StepLogRequest(logger, (String)ctx.getBean("requestId"), target);;
+                    stepLog = new StepLogRequest(logger, requestIdSupplier.get(), target);
                     break;
-      default:      stepLog = new StepLogDetail(logger, (String)ctx.getBean("detailId"), target);;
+      default:      stepLog = new StepLogDetail(logger, detailIdSupplier.get(), target);
     }
-
     stepLog.startStep("...");
     try {
       Object result = joinPoint.proceed();

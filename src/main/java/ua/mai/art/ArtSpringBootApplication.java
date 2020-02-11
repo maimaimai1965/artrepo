@@ -17,6 +17,8 @@ import ua.telesens.plu.log.StepLogRequest;
 import ua.telesens.plu.log.StepLogRoot;
 import ua.telesens.plu.module.ModuleInfo;
 
+import java.util.function.Supplier;
+
 
 /**
  * Информация о приложении описывается в классе {@link ArtModuleInfo}, для которого есть бин moduleInfo. В этом классе
@@ -139,7 +141,8 @@ import ua.telesens.plu.module.ModuleInfo;
  * logback и подключается log4j2.<br>
  * Настраивается логирование в файле <code>log4g.xml</code>.<br>
  *
- * <h1>Логирование</h1>
+ * <h1>Местонахождение лог-файлов</h1>
+ *
  * В файле <code>log4g.xml</code> можно задать каталог к месту хранения лог-файлов. Этот каталог определяется property
  * c <code>name="log-path</code>".<br>
  * Доступно 2 варианта определения каталога:
@@ -182,6 +185,16 @@ import ua.telesens.plu.module.ModuleInfo;
  *     {@link ua.mai.art.aspect.LoggingAspect#stepLogRequestAround(ProceedingJoinPoint)} выполняет выбранные методы
  *     контроллеров в шагах логирования {@link ua.telesens.plu.log.StepLogRequest}.
  * </ul>
+ * <h2>Определение идентификаторов для шагов логирования</h2>
+ *
+ * Для определения идентификаторов для типов шагов логирования используются бины-поставщики, определяемые в
+ * {@link LogConfig}:
+ * <ul>
+ * <li>rootIdSupplier - {@link LogConfig#createRootIdSupplier()};
+ * <li>requestIdSupplier - {@link LogConfig#createRequestIdSupplier()};
+ * <li>jobIdSupplier - {@link LogConfig#createJobIdSupplier()};
+ * <li>detailIdSupplier - {@link LogConfig#createDetailIdSupplier()}.
+ * </ul>
  */
 @ServletComponentScan
 //Не используем Security
@@ -196,10 +209,11 @@ public class ArtSpringBootApplication extends  SpringBootServletInitializer {
   private static final String INIT_REQUEST_LOG_PREFIX = "ini";
 
 
-  private static  final String rootId;
+  private static final String rootId;
+  private static final String moduleName;
   static {
     /* Создание идентификатора запущенного приложения. */
-    String moduleName = ArtModuleInfo.getInstance().getModuleName();
+    moduleName = ArtModuleInfo.getInstance().getModuleName();
     rootId = LogConfig.createRootId(moduleName);
   }
 
@@ -213,17 +227,6 @@ public class ArtSpringBootApplication extends  SpringBootServletInitializer {
     return ArtModuleInfo.getInstance();
   }
 
-  /** Логирование стрта приложения. */
-  private static void logStartApp() {
-    StepLogRoot stepLog = new StepLogRoot(logger, rootId, "main()");
-    String moduleName = ArtModuleInfo.getInstance().getModuleName();
-    stepLog.info("{} application starts...", moduleName);
-    //Получаем идентификатор запроса requestId, который используется при старте приложения
-    StepLogRequest initRequestLog =
-        new StepLogRequest (logger, rootId, LogConfig.createRequestId(INIT_REQUEST_LOG_PREFIX), "main()");
-    initRequestLog.startStep("Init application...");
-  }
-
 
   public ArtSpringBootApplication() {
     super();
@@ -231,18 +234,17 @@ public class ArtSpringBootApplication extends  SpringBootServletInitializer {
 
   public static void main(String[] args) {
     //Логируем старт приложения.
-//    logStartApp();
-    StepLogRoot stepLog = new StepLogRoot(logger, rootId, "main()");
-    String moduleName = ArtModuleInfo.getInstance().getModuleName();
-    stepLog.info("{} application starts...", moduleName);
+    StepLogRoot stepLogRoot = new StepLogRoot(logger, rootId, "main()");
+    stepLogRoot.info("{} application starts...", moduleName);
+
     //Получаем идентификатор запроса requestId, который используется при старте приложения
     StepLogRequest initRequestLog =
-      new StepLogRequest (logger, rootId, LogConfig.createRequestId(INIT_REQUEST_LOG_PREFIX), "main()");
+        new StepLogRequest (logger, rootId, LogConfig.getStartRequestId(), "main()");
     initRequestLog.startStep("Init application...");
 
     SpringApplication app = new SpringApplication(ArtSpringBootApplication.class);
     ConfigurableApplicationContext context = app.run(args);
-//    int i = 5;
+
   }
 
 //Для:

@@ -21,9 +21,14 @@ public class SupportRepositoryForOracleImpl implements SupportRepository {
 
 //  private Logger logger = LoggerFactory.getLogger(this.getClass());
 
-  @Autowired
   NamedParameterJdbcTemplate jdbcTemplate;
-  
+
+  @Autowired
+  public SupportRepositoryForOracleImpl(NamedParameterJdbcTemplate jdbcTemplate) {
+    this.jdbcTemplate = jdbcTemplate;
+  }
+
+
   @Override
   public void checkConnection() {
 //    StepLogDb stepLogDb = new StepLogDb(logger,"SupportRepositoryH2AndPostgresImpl.StepLogDb()");

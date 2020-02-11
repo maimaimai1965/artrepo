@@ -15,8 +15,13 @@ public class StudentRepositoryJdbcImpl implements StudentRepository {
 
 //  private Logger logger = LoggerFactory.getLogger(this.getClass());
 
-  @Autowired
   NamedParameterJdbcTemplate jdbcTemplate;
+
+  //  @Autowired
+  public StudentRepositoryJdbcImpl(NamedParameterJdbcTemplate jdbcTemplate) {
+    this.jdbcTemplate = jdbcTemplate;
+  }
+
 
   @Override
   public List<Student> findAll() {

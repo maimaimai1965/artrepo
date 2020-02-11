@@ -10,7 +10,7 @@
     </parent>
     <groupId>ua.mai.art</groupId>
     <artifactId>art</artifactId>
-    <version>0.0.2-SNAPSHOT</version>
+    <version>0.0.3-SNAPSHOT</version>
     <packaging>war</packaging>
     <name>art</name>
     <description>art project for Spring Boot</description>

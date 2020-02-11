@@ -12,8 +12,12 @@ import java.util.List;
 @RestController
 public class StudentController {
 
-  @Autowired
   private StudentService studentService;
+
+  @Autowired
+  public StudentController(StudentService studentService) {
+    this.studentService = studentService;
+  }
 
 
   public List<Student> findAll() {

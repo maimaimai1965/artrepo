@@ -8,14 +8,21 @@ import ua.mai.art.repository.StudentRepository;
 
 import java.util.List;
 
-
+/**
+ *
+ */
 @Service
 public class StudentServiceImpl implements ua.mai.art.service.StudentService {
 
 //  private Logger logger = LoggerFactory.getLogger(this.getClass());
 
-  @Autowired
   private StudentRepository studentRepository;
+
+  @Autowired
+  public StudentServiceImpl(StudentRepository studentRepository) {
+    this.studentRepository = studentRepository;
+  }
+
 
   @StepLogJobAnnotation
   @Override
