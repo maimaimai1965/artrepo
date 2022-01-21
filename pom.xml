@@ -94,7 +94,7 @@
             <artifactId>h2</artifactId>
             <scope>runtime</scope>
             <!-- Версия используемая в приложении должна совпадать с версией, БД на диске (для профиля h2-in-file) -->
-            <version>1.4.196</version>
+            <version>2.1.210</version>
         </dependency>
 
         <dependency>
